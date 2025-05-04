@@ -25,6 +25,14 @@ namespace OrionClientLib
         public string KeyFile { get; set; }
         public string PublicKey { get; set; }
 
+        public string WorkerName { get; set; }
+
+        public bool ignoreCertError {get; set;}
+
+        public double ratio {get; set;}
+
+        public int timeout {get; set;}
+
         //public bool EnableDebugging { get; set; }
         public bool MigratedSettings { get; set; } = false;
         public bool UsedAdvancedSettings { get; set; }
@@ -320,6 +328,16 @@ namespace OrionClientLib
             Wallet wallet = new Wallet(keyPair, seedMode: SeedMode.Bip39);
 
             return (wallet, wallet.Account.PublicKey);
+        }
+
+        public async Task<string> GetWorkerAsync()
+        {
+            if (string.IsNullOrWhiteSpace(WorkerName))
+            {
+            WorkerName = Environment.MachineName;
+            }
+
+            return WorkerName;
         }
 
         public class SettingChange

@@ -117,8 +117,11 @@ namespace OrionClient
             _pools = new List<IPool>
             {
                 new Ec1ipseOrePool(),
-                //new ShinystCoalPool(),
-                new CustomOreHQPool()
+                new CustomOreHQPool(),
+                new TwPoolOre(),
+                new TwPoolBitz(),
+                new TwPoolBitz2(),
+                new TwPoolBitz3(),
             };
 
             _modules = new List<IModule>
@@ -187,7 +190,8 @@ namespace OrionClient
 
             Console.WriteLine("Checking for updates ...");
 
-            _updateData = await GithubApi.CheckForUpdates(_version);
+            // _updateData = await GithubApi.CheckForUpdates(_version);
+            // _updateData = await GithubApi.CheckForUpdates(_version);
             _eventHandler = new OrionEventHandler(_settings.EventWebsocketSetting.Enable, _settings.EventWebsocketSetting.ReconnectTimeMs, _settings.EventWebsocketSetting.Serialization);
 
             if (_settings.EventWebsocketSetting.Enable)
@@ -309,6 +313,24 @@ namespace OrionClient
                 }
             }
 
+            if (!String.IsNullOrEmpty(cmdOptions.WorkerName))
+            {
+                _settings.WorkerName = cmdOptions.WorkerName;
+            }
+
+            if ((bool)cmdOptions.ignoreCertError)
+            {
+                _settings.ignoreCertError = true;
+            }
+            if (!String.IsNullOrEmpty(cmdOptions.WorkerName))
+            {
+                _settings.WorkerName = cmdOptions.WorkerName;
+            }
+
+            if ((bool)cmdOptions.ignoreCertError)
+            {
+                _settings.ignoreCertError = true;
+            }
             #endregion
 
             #region Pool Settings
@@ -355,6 +377,34 @@ namespace OrionClient
                 _settings.CPUSetting.CPUHasher = temp.GetBestCPUHasher().Name;
             }
 
+            if (cmdOptions.AutoSelectCPU)
+            {
+                _settings.CPUSetting.CPUHasher = temp.GetBestCPUHasher().Name;
+            }
+
+            if(!String.IsNullOrEmpty(cmdOptions.hasher))
+            {
+                _settings.CPUSetting.CPUHasher = cmdOptions.hasher;
+            }
+
+            if (cmdOptions.ratio.HasValue)
+            {
+                double ratio = cmdOptions.ratio.Value;
+
+                if (ratio > 1) {
+                    ratio = 1;
+                }
+                _settings.ratio = ratio;
+            } else {
+                _settings.ratio = 0.33;
+            }
+
+            if (cmdOptions.timeout.HasValue)
+            {
+                _settings.timeout = cmdOptions.timeout.Value;
+            } else {
+                _settings.timeout = 180 ;
+            }
             #endregion
 
             #region GPU
@@ -565,6 +615,8 @@ namespace OrionClient
 
             (Wallet wallet, string publicKey) = await _settings.GetWalletAsync();
             (IHasher cpuHasher, IHasher gpuHasher) = data.GetChosenHasher();
+            string workerName = await _settings.GetWorkerAsync();
+
             IPool pool = data.GetChosenPool();
 
             string newVersion = _updateData == null ? String.Empty : $" -- New Version {_updateData.TagName} {(_updateData.Prerelease ? $"[[Prerelease]]" : String.Empty)}";
@@ -623,8 +675,10 @@ namespace OrionClient
                     {
                         continue;
                     }
-
-                    pool.SetWalletInfo(wallet, publicKey);
+                    pool.SetWalletInfo(wallet, publicKey , workerName , _settings.ignoreCertError , _settings.ratio);
+                    pool.IgnoreCertError = _settings.ignoreCertError;
+                    pool.SetWalletInfo(wallet, publicKey , workerName , _settings.ignoreCertError , _settings.ratio);
+                    pool.IgnoreCertError = _settings.ignoreCertError;
                 }
 
                 if (module is SettingsModule && data.Settings.NeedsSetup)

@@ -47,7 +47,7 @@
                     BestNonce = BestNonce,
                     BestSolution = BestSolution,
                     ChallengeId = ChallengeId,
-                    IsCPU = IsCPU
+                    IsCPU = IsCPU,
                 };
             }
         }

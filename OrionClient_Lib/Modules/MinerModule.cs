@@ -129,6 +129,7 @@ namespace OrionClientLib.Modules
 
             _logger.Log(LogLevel.Debug, $"Checking setup requirements for '{pool.Name}'");
 
+            string workerName = await data.Settings.GetWorkerAsync();
             (Wallet wallet, string publicKey) = await data.Settings.GetWalletAsync();
 
             if (pool.RequiresKeypair && wallet == null)
@@ -136,7 +137,9 @@ namespace OrionClientLib.Modules
                 return (false, $"A full keypair is required for this pool. Private keys are never sent to the server");
             }
 
-            pool.SetWalletInfo(wallet, publicKey);
+            pool.SetWalletInfo(wallet, publicKey , workerName , _currentData.Settings.ignoreCertError , _currentData.Settings.ratio);
+
+            _logger.Log(LogLevel.Debug, $"timeout:{_currentData.Settings.timeout} ice1:{_currentData.Settings.ignoreCertError} ice2:{pool.IgnoreCertError} Ratio:{_currentData.Settings.ratio} Hasher:{_currentData.Settings.CPUSetting.CPUHasher}");
 
             var poolResult = await pool.SetupAsync(_cts.Token);
 
@@ -227,23 +230,20 @@ namespace OrionClientLib.Modules
                     CPUThreads = (cpuHasher as BaseCPUHasher)?.Threads ?? 0,
                     GPUBatchSize = (gpuHasher as BaseGPUHasher)?.BatchSize ?? 0,
                     GPUBlockSize = _currentData.Settings.GPUSetting.GPUBlockSize,
-                    GPUHasher = gpuHasher?.Name ?? "Disabled",
+                    GPUHasher = gpuHasher.Name,
                     Pool = pool.Name,
                     ProgramGenerationThreads = _currentData.Settings.GPUSetting.ProgramGenerationThreads <= 0 ? Environment.ProcessorCount : _currentData.Settings.GPUSetting.ProgramGenerationThreads,
                 };
 
-                if (gpuHasher != null)
-                {
-                    var devices = GetDevicesInUse((IGPUHasher)gpuHasher);
+                var devices = GetDevicesInUse((IGPUHasher)gpuHasher);
 
-                    for (int i = 0; i < devices.Count; i++)
+                for(int i =0; i < devices.Count; i++)
+                {
+                    miningStartEvent.Devices.Add(new MiningStartEvent.DeviceInformation
                     {
-                        miningStartEvent.Devices.Add(new MiningStartEvent.DeviceInformation
-                        {
-                            Id = i,
-                            Name = devices[i].Name
-                        });
-                    }
+                        Id = i,
+                        Name = devices[i].Name
+                    });
                 }
 
                 _currentData.EventHandler.AddEvent(miningStartEvent);
@@ -260,7 +260,8 @@ namespace OrionClientLib.Modules
                 Challenge = e.Challenge,
                 ChallengeId = e.ChallengeId,
                 StartNonce = e.StartNonce,
-                EndNonce = e.EndNonce
+                EndNonce = e.EndNonce , 
+                Cutoff = e.Cutoff
             });
         }
 

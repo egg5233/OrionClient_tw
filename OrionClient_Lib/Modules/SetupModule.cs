@@ -31,6 +31,7 @@ namespace OrionClientLib.Modules
             _steps.Add(SetupTypeAsync);
             _steps.Add(WalletSetupAsync);
             _steps.Add(ChoosePoolAsync);
+            _steps.Add(WorkerSetupAsync);
             _steps.Add(ChooseCPUHasherAsync);
             _steps.Add(ChooseGPUHasherAsync);
             _steps.Add(FinalConfirmationAsync);
@@ -208,6 +209,19 @@ namespace OrionClientLib.Modules
                         return _currentStep - 1;
                 }
             }
+        }
+
+        private async Task<int> WorkerSetupAsync()
+        {
+            string cu = await _settings.GetWorkerAsync();
+            TextPrompt<string> wp = new TextPrompt<string>("Worker Name");
+            wp.DefaultValue(cu);
+            string WorkerName = await wp.ShowAsync(AnsiConsole.Console, _cts.Token);
+            if (string.IsNullOrWhiteSpace(WorkerName)){
+                WorkerName = Environment.MachineName;
+            }
+            _settings.WorkerName = WorkerName;
+            return _currentStep + 1;
         }
 
         private async Task<int> ChooseCPUHasherAsync()
@@ -521,9 +535,10 @@ namespace OrionClientLib.Modules
             }
             else
             {
+                string workerName = await _data.Settings.GetWorkerAsync();
                 (Wallet wallet, string publicKey) = await _data.Settings.GetWalletAsync();
 
-                chosenPool.SetWalletInfo(wallet, publicKey);
+                chosenPool.SetWalletInfo(wallet, publicKey , workerName , _settings.ignoreCertError , _settings.ratio);
 
                 var poolSetup = await chosenPool.SetupAsync(_cts.Token, true);
 

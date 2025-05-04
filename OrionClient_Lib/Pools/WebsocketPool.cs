@@ -27,7 +27,7 @@ namespace OrionClientLib.Pools
             //TODO: Detect multiple calls to this and return true as a patch
             _webSocket = new ClientWebSocket();
             _cts = new CancellationTokenSource();
-
+            _webSocket.Options.RemoteCertificateValidationCallback = (sender, cert, chain, sslPolicyErrors) => true;
             if (!String.IsNullOrEmpty(_authorization))
             {
                 _webSocket.Options.SetRequestHeader("Authorization", _authorization);
@@ -98,7 +98,7 @@ namespace OrionClientLib.Pools
             }
         }
 
-        public override void SetWalletInfo(Wallet wallet, string publicKey)
+        public override void SetWalletInfo(Wallet wallet, string publicKey , string workerName , bool ignoreCertError , double ratio)
         {
             if (publicKey != null)
             {

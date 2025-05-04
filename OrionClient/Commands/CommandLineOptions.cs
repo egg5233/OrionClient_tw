@@ -17,12 +17,18 @@ namespace OrionClient.Commands
         [Option('k', "keypair", HelpText = "Keypair file path")]
         public string? KeyFile { get; set; }
 
+        [Option("ice", HelpText = "Ignore SSL error")]
+        public bool ignoreCertError { get; set; }
+
         [Option("key", HelpText = "Public key for pools that don't require a keypair")]
         public string? PublicKey { get; set; }
 
+        [Option("worker", HelpText = "worker")]
+        public string? WorkerName { get; set; }
+
         #region Pool Settings
 
-        [Option("pool", HelpText = "Selects pool (Values: ec1ipse, excalivator)")]
+        [Option("pool", HelpText = "Selects pool (Values: ec1ipse, excalivator , twpore , twbitz , twbitz2 , twbitz3)")]
         public string? Pool { get; set; }
 
         #endregion
@@ -34,6 +40,15 @@ namespace OrionClient.Commands
 
         [Option('a', "cpu-auto", HelpText = "Auto selects best CPU hasher for device")]
         public bool AutoSelectCPU { get; set; }
+
+        [Option("cpu-hasher", HelpText = "Stock/Hybrid/Full AVX512/Native AVX2/Hybrid AVX2/Native Stock")]
+        public string? hasher { get; set; }
+
+        [Option('r', "ratio", HelpText = "Nonce ratio , default=0.33")]
+        public double? ratio { get; set; }
+
+        [Option("timeout", HelpText = "Timeout , default = 180 second")]
+        public int? timeout { get; set; }
 
         #endregion
 

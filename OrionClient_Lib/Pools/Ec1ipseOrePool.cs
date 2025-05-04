@@ -19,5 +19,12 @@
 
         public override string Website => "https://stats.ec1ipse.me/miner-info/miner?pubkey={0}";
         public override bool StakingEnabled => true;
+
+        private bool _ignoreCertError;
+        public override bool IgnoreCertError
+        {
+            get => _ignoreCertError;
+            set => _ignoreCertError = value;
+        }
     }
 }

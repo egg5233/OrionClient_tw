@@ -10,6 +10,8 @@ namespace OrionEventLib.Events.Mining
         public required ulong EndNonce { get; set; }
         public required int ChallengeId { get; set; }
 
+        public required ulong Cutoff { get; set; }
+
         public override ArraySegment<byte> Serialize(EventSerializer eventSerializer)
         {
             base.Serialize(eventSerializer);
@@ -18,6 +20,7 @@ namespace OrionEventLib.Events.Mining
             eventSerializer.WriteU64(StartNonce);
             eventSerializer.WriteU64(EndNonce);
             eventSerializer.WriteS32(ChallengeId);
+            eventSerializer.WriteU64(Cutoff);
 
             return eventSerializer.GetData();
         }

@@ -161,7 +161,6 @@ namespace OrionClientLib.Pools
             byte[] sigBytes = RequiresKeypair ? _wallet.Sign(tBytes) : new byte[64];
             string sig = _encoder.EncodeData(sigBytes);
 
-            _authorization = $"Basic {Convert.ToBase64String(Encoding.UTF8.GetBytes($"{_publicKey}:{sig}"))}";
             bool result = await base.ConnectAsync(token);
 
             await RefreshStakeBalancesAsync(false, token);
@@ -169,21 +168,36 @@ namespace OrionClientLib.Pools
             return result && await SendReadyUp(false);
         }
 
-        public override void SetWalletInfo(Wallet wallet, string publicKey)
+        public override void SetWalletInfo(Wallet wallet, string publicKey , string workerName , bool ignoreCertError , double ratio)
         {
             _minerInformation ??= new MinerPoolInformation(Coins);
-            _poolSettings ??= new HQPoolSettings(Name);
-
+            _poolSettings ??= new HQPoolSettings(Name); 
+            _poolSettings.CPUNonceRatio = ratio;
             if (!String.IsNullOrEmpty(HostName))
             {
-                _client ??= new HttpClient
-                {
-                    BaseAddress = new Uri($"{(_poolSettings.IsHttps == false ? "http" : "https")}://{WebsocketUrl.Host}"),
-                    Timeout = TimeSpan.FromSeconds(10)
-                };
+                if (ignoreCertError) {
+                    var handler = new HttpClientHandler
+                    {
+                        ServerCertificateCustomValidationCallback = (request, cert, chain, errors) =>
+                        {
+                            return true;
+                        }
+                    };
+                    _client = new HttpClient(handler)
+                    {
+                        BaseAddress = new Uri($"https://{WebsocketUrl.Host}"),
+                        Timeout = TimeSpan.FromSeconds(5)
+                    };
+                } else {
+                    _client ??= new HttpClient()
+                    {
+                        BaseAddress = new Uri($"https://{WebsocketUrl.Host}"),
+                        Timeout = TimeSpan.FromSeconds(5)
+                    };
+                }
             }
 
-            base.SetWalletInfo(wallet, publicKey);
+            base.SetWalletInfo(wallet, publicKey , workerName ,  ignoreCertError , ratio);
         }
 
         public override async Task<(bool, string)> SetupAsync(CancellationToken token, bool initialSetup = false)
@@ -710,14 +724,14 @@ namespace OrionClientLib.Pools
         protected virtual async Task Update(bool updateBalance, CancellationToken token)
         {
             if (updateBalance)
-            {
-                var balanceInfo = await GetBalanceAsync(token);
+        {
+            var balanceInfo = await GetBalanceAsync(token);
 
-                if (balanceInfo.success)
-                {
+            if (balanceInfo.success)
+            {
                     foreach (var bInfo in balanceInfo.balances)
-                    {
-                        _minerInformation.UpdateWalletBalance(bInfo.coin, bInfo.balance);
+                {
+                    _minerInformation.UpdateWalletBalance(bInfo.coin, bInfo.balance);
                     }
                 }
             }
@@ -940,6 +954,7 @@ namespace OrionClientLib.Pools
             {
                 ChallengeId = GenerateChallengeId(challengeResponse.Challenge),
                 Challenge = challengeResponse.Challenge,
+                Cutoff = (ulong)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds + challengeResponse.Cutoff - 1,
                 StartNonce = challengeResponse.StartNonce,
                 EndNonce = challengeResponse.EndNonce,
                 TotalCPUNonces = (ulong)((challengeResponse.EndNonce - challengeResponse.StartNonce) * _poolSettings.CPUNonceRatio)

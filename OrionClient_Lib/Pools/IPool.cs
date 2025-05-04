@@ -18,12 +18,14 @@ namespace OrionClientLib.Pools
         public Coin Coins { get; }
         public bool RequiresKeypair { get; }
 
+        public bool IgnoreCertError { get; set;}
+
         public event EventHandler<NewChallengeInfo> OnChallengeUpdate;
         public event EventHandler<(string[] columns, byte[] data)> OnMinerUpdate;
         public event EventHandler PauseMining;
         public event EventHandler ResumeMining;
 
-        public void SetWalletInfo(Wallet wallet, string publicKey);
+        public void SetWalletInfo(Wallet wallet, string publicKey , string workerName , bool ignoreCertError , double CPUNonceRatio);
         public Task<(bool success, string errorMessage)> SetupAsync(CancellationToken token, bool initialSetup = false);
 
         public Task<bool> ConnectAsync(CancellationToken token);
@@ -47,12 +49,14 @@ namespace OrionClientLib.Pools
         public abstract Coin Coins { get; }
         public abstract bool RequiresKeypair { get; }
 
+        public abstract bool IgnoreCertError { get; set;}
+
         public abstract event EventHandler<NewChallengeInfo> OnChallengeUpdate;
         public abstract event EventHandler<(string[] columns, byte[] data)> OnMinerUpdate;
         public abstract event EventHandler PauseMining;
         public abstract event EventHandler ResumeMining;
 
-        public abstract void SetWalletInfo(Wallet wallet, string publicKey);
+        public abstract void SetWalletInfo(Wallet wallet, string publicKey , string workerName , bool ignoreCertError , double CPUNonceRatio);
         public abstract Task<(bool success, string errorMessage)> SetupAsync(CancellationToken token, bool initialSetup = false);
 
         public abstract Task<bool> ConnectAsync(CancellationToken token);

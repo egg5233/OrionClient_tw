@@ -42,6 +42,13 @@ namespace OrionClientLib.Pools
         public override event EventHandler PauseMining;
         public override event EventHandler ResumeMining;
 
+        private bool _ignoreCertError;
+        public override bool IgnoreCertError
+        {
+            get => _ignoreCertError;
+            set => _ignoreCertError = value;
+        }
+        
         private IRpcClient _rpcClient = ClientFactory.GetClient(Cluster.MainNet);
         //private IRpcClient _rpcClient = ClientFactory.GetClient(RPC_URL);
 
@@ -60,7 +67,7 @@ namespace OrionClientLib.Pools
             return ["Time", "Difficulty", "Ore Reward"];
         }
 
-        public override void SetWalletInfo(Wallet wallet, string publicKey)
+        public override void SetWalletInfo(Wallet wallet, string publicKey , string workerName , bool ignoreCertError , double ratio)
         {
             //This can be called multiple times
 

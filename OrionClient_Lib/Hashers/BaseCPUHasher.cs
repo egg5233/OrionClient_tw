@@ -46,6 +46,11 @@ namespace OrionClientLib.Hashers
         private int _threads = Environment.ProcessorCount;
         private Task _taskRunner;
 
+        private DateTime _lastReceiveTime = DateTime.UtcNow;
+        private CancellationTokenSource _monitorCts;
+
+        private CancellationTokenSource _cts;
+
         public async Task<(bool success, string message)> InitializeAsync(IPool pool, Settings settings)
         {
             if (Initialized)
@@ -134,7 +139,7 @@ namespace OrionClientLib.Hashers
             //        currentProcess.ProcessorAffinity = processorMask;
             //    }
             //}
-
+            StartMonitor();
             return (true, String.Empty);
         }
 
@@ -164,11 +169,58 @@ namespace OrionClientLib.Hashers
             _newChallengeWait.Set();
             _pauseMining.Set();
             _challengeStartTime = _sw.Elapsed;
-            _logger.Log(LogLevel.Debug, $"[CPU] New challenge. Challenge Id: {challengeId}. Range: {startNonce} - {endNonce}");
+             _lastReceiveTime = DateTime.UtcNow;
+            _logger.Log(LogLevel.Debug, $"[CPU] New challenge. Challenge Id: {challengeId}. Range: {startNonce} - {endNonce} , {(int)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds}");
 
             return true;
         }
 
+        private void StartMonitor()
+        {
+            _monitorCts?.Cancel();
+            _monitorCts = new CancellationTokenSource();
+            _cts = new CancellationTokenSource();
+            Task.Run(async () =>
+            {
+                while (!_monitorCts.IsCancellationRequested)
+                {
+                    var now = DateTime.UtcNow;
+                    var final_timeout = _settings.timeout;
+                    if (final_timeout <= 30) {
+                        final_timeout = 30;
+                    }
+                    if ((now - _lastReceiveTime).TotalSeconds > final_timeout) // no message for 30 seconds
+                    {
+                        _logger.Log(LogLevel.Warn, "No message received for 180 seconds. Forcing reconnect...");
+                        PauseMining();
+                        try
+                        {
+                            var result = await _pool.DisconnectAsync();
+                            if (result) {
+                                _logger.Log(LogLevel.Warn, "disconnected");
+                                var r2 = await _pool.ConnectAsync(_cts.Token); 
+                                if (r2){
+                                    _logger.Log(LogLevel.Warn, "reconnected");
+                                    ResumeMining();
+                                }
+                            }
+                        }
+                        catch (Exception ex) {
+                            _logger.Log(LogLevel.Warn, ex, $"Reconnect attempt failed with exception. {ex.ToString()}");
+                        }
+                    }
+
+                    try
+                    {
+                        await Task.Delay(5000, _monitorCts.Token); // check every 5s
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        break;
+                    }
+                }
+            });
+        }
         public async Task StopAsync()
         {
             if (!_running)

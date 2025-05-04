@@ -7,6 +7,8 @@
         public byte[] Challenge { get; set; }
         public int ChallengeId { get; set; }
 
+        public ulong Cutoff { get; set; }
+
         public ulong TotalCPUNonces { get; set; }
 
         public ulong CPUStartNonce => StartNonce;

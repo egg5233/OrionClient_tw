@@ -22,10 +22,18 @@ namespace OrionClientLib.Pools
         public override string Website => String.Empty;
         public override bool StakingEnabled => false;
 
-        public override void SetWalletInfo(Wallet wallet, string publicKey)
+        private bool _ignoreCertError;
+        public override bool IgnoreCertError
+        {
+            get => _ignoreCertError;
+            set => _ignoreCertError = value;
+        }
+
+        public override void SetWalletInfo(Wallet wallet, string publicKey , string workerName , bool ignoreCertError , double ratio)
         {
             _poolSettings ??= new HQPoolSettings(Name);
-
+            _poolSettings.CPUNonceRatio = ratio;
+            _ignoreCertError = ignoreCertError;
             if (String.IsNullOrEmpty(HostName))
             {
                 _poolSettings.LoadAsync().Wait();
@@ -33,7 +41,7 @@ namespace OrionClientLib.Pools
                 HostName = _poolSettings.CustomDomain;
             }
 
-            base.SetWalletInfo(wallet, publicKey);
+            base.SetWalletInfo(wallet, publicKey , workerName , ignoreCertError , ratio);
         }
 
         public override async Task<(bool, string)> SetupAsync(CancellationToken token, bool initialSetup = false)
@@ -47,7 +55,7 @@ namespace OrionClientLib.Pools
 
                     if (!String.IsNullOrEmpty(_poolSettings.CustomDomain))
                     {
-                        textPrompt.DefaultValue($"{(_poolSettings.IsHttps == false ? "http" : "https")}://{_poolSettings.CustomDomain}");
+                        textPrompt.DefaultValue(_poolSettings.CustomDomain);
                     }
 
                     textPrompt.Validate((str) =>
@@ -91,16 +99,30 @@ namespace OrionClientLib.Pools
                     }
 
                     _poolSettings.CustomDomain = customDomain.Host;
-                    _poolSettings.IsHttps = customDomain.Scheme == "https";
-
                     await _poolSettings.SaveAsync();
 
                     //Initialize client
-                    _client = new HttpClient
-                    {
-                        BaseAddress = new Uri($"{(_poolSettings.IsHttps == false ? "http" : "https")}://{WebsocketUrl.Host}"),
-                        Timeout = TimeSpan.FromSeconds(5)
-                    };
+                    if (_ignoreCertError) {
+                        var handler = new HttpClientHandler
+                        {
+                            ServerCertificateCustomValidationCallback = (request, cert, chain, errors) =>
+                            {
+
+                                return true;
+                            }
+                        };
+                        _client = new HttpClient(handler)
+                        {
+                            BaseAddress = new Uri($"https://{WebsocketUrl.Host}"),
+                            Timeout = TimeSpan.FromSeconds(5)
+                        };
+                    } else {
+                        _client = new HttpClient()
+                        {
+                            BaseAddress = new Uri($"https://{WebsocketUrl.Host}"),
+                            Timeout = TimeSpan.FromSeconds(5)
+                        };
+                    }
                 }
             }
             finally

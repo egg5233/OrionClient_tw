@@ -35,6 +35,12 @@ namespace OrionClientLib.Pools
         public override string Website => "https://mine.coal-pool.xyz/miner/balance-stats?key={0}";
         public override bool StakingEnabled => false;
 
+        private bool _ignoreCertError;
+        public override bool IgnoreCertError
+        {
+            get => _ignoreCertError;
+            set => _ignoreCertError = value;
+        }
         protected override async Task ClaimRewardsOptionAsync(Coin coin, CancellationToken token)
         {
             string message = String.Empty;

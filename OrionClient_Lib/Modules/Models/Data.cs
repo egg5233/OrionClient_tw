@@ -70,7 +70,12 @@ namespace OrionClientLib.Modules.Models
 
         public (IHasher hasher, List<int> devices) GetGPUSettingInfo(bool forceAMD)
         {
-            var gpuHasher = (BaseGPUHasher)Hashers.FirstOrDefault(x => x is BaseGPUHasher);
+            var gpuHasher = Hashers.FirstOrDefault(x => x is BaseGPUHasher) as BaseGPUHasher;
+
+            if(gpuHasher == null)
+            {
+                return (null, new List<int>());
+            }
 
             var allDevices = gpuHasher.GetDevices(false);
             List<int> gpuDevices = new List<int>();
