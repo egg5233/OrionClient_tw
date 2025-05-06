@@ -10,19 +10,19 @@ using System.Threading.Tasks;
 
 namespace OrionClientLib.Pools
 {
-    public class TwPoolBitz3 : OreHQPool
+    public class TwPoolOre2 : OreHQPool
     {
-        public override string Name { get; } = "Twbitz3";
+        public override string Name { get; } = "Twore2";
         public override string DisplayName => Name;
-        public override string Description => $"Bitz";
+        public override string Description => $"Ore/Coal";
         public override bool DisplaySetting => true;
         public override Coin Coins { get; } = Coin.Ore;
-        public override string ArgName => "twbitz3";
+        public override string ArgName => "twpore2";
 
         public override Dictionary<string, string> Features { get; } = new Dictionary<string, string>();
 
         public override bool HideOnPoolList { get; } = false;
-        public override string HostName { get; protected set; } = "93.179.125.204";
+        public override string HostName { get; protected set; } = "120.76.140.6:1443";
 
         string? WorkerName;
 
@@ -51,7 +51,7 @@ namespace OrionClientLib.Pools
 
                 HostName = _poolSettings.CustomDomain;
             }
-
+            _poolSettings.CPUNonceRatio = ratio;
             base.SetWalletInfo(wallet, publicKey , workerName  , ignoreCertError , ratio);
         }
 

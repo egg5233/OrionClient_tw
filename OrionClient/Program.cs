@@ -119,6 +119,7 @@ namespace OrionClient
                 new Ec1ipseOrePool(),
                 new CustomOreHQPool(),
                 new TwPoolOre(),
+                new TwPoolOre2(),
                 new TwPoolBitz(),
                 new TwPoolBitz2(),
                 new TwPoolBitz3(),
